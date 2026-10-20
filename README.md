@@ -1,8 +1,6 @@
-# Pabions
+# Kumquat
 
 Офлайн‑конвертер файлов для macOS, который работает без кликов. Начните перетаскивать файл, нажмите клавишу, бросьте файл на сектор колеса, и результат появится рядом с оригиналом. Ничего не загружается в интернет: вся обработка идёт на вашем Mac.
-
-Внутри приложение называется **Kumquat**.
 
 ## Как это работает
 
@@ -57,8 +55,8 @@
 ### Шаги
 
 ```bash
-git clone https://github.com/aeroboss13/Pabions.git
-cd Pabions
+git clone https://github.com/aeroboss13/Kumquat.git
+cd Kumquat
 brew install ffmpeg
 ./scripts/build-app.sh --install
 ```
