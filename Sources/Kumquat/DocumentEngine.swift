@@ -107,7 +107,7 @@ enum DocumentEngine {
             try (doc.string ?? "").write(to: out, atomically: true, encoding: .utf8)
             return out
         default:
-            guard let format = DocFormat(rawValue: ext) else { throw ConversionError.unsupported("PDF → \(ext)") }
+            guard let format = DocFormat(rawValue: ext) else { throw ConversionError.unsupported(tr("PDF → %@", ext)) }
             let text = try PDFEngine.attributedText(url)
             return try await write(text, title: url.deletingPathExtension().lastPathComponent, as: format,
                                    to: OutputNamer.url(for: url, ext: ext, directory: directory))
@@ -133,7 +133,7 @@ enum DocumentEngine {
         }
         // Last resort: Quick Look renders the first slide.
         guard ext != "pdf" else {
-            throw ConversionError.toolFailed("Exporting slides to PDF needs Keynote (free on the App Store) or LibreOffice.")
+            throw ConversionError.toolFailed(tr("Exporting slides to PDF needs Keynote (free on the App Store) or LibreOffice."))
         }
         let request = QLThumbnailGenerator.Request(fileAt: url, size: CGSize(width: 1920, height: 1080), scale: 1, representationTypes: .thumbnail)
         let thumb = try await QLThumbnailGenerator.shared.generateBestRepresentation(for: request)
@@ -342,7 +342,7 @@ nonisolated enum PDFRenderer {
     static func render(_ text: NSAttributedString, to url: URL) throws {
         var mediaBox = CGRect(x: 0, y: 0, width: 595, height: 842) // A4
         let margin: CGFloat = 56
-        guard let ctx = CGContext(url as CFURL, mediaBox: &mediaBox, nil) else { throw ConversionError.toolFailed("Couldn't create PDF") }
+        guard let ctx = CGContext(url as CFURL, mediaBox: &mediaBox, nil) else { throw ConversionError.toolFailed(tr("Couldn't create PDF")) }
         let framesetter = CTFramesetterCreateWithAttributedString(text as CFAttributedString)
         let frameRect = mediaBox.insetBy(dx: margin, dy: margin)
         var location = 0
@@ -470,7 +470,7 @@ enum IWork {
     }
 
     static func saveAsPages(_ docx: URL, to out: URL) async throws {
-        guard ConverterEnvironment.pagesAvailable else { throw ConversionError.toolFailed("Pages isn't installed.") }
+        guard ConverterEnvironment.pagesAvailable else { throw ConversionError.toolFailed(tr("Pages isn't installed.")) }
         let script = """
         on run argv
             set src to POSIX file (item 1 of argv)

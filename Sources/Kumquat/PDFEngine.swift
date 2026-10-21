@@ -5,7 +5,7 @@ import Vision
 nonisolated enum PDFEngine {
     static func open(_ url: URL) throws -> PDFDocument {
         guard let doc = PDFDocument(url: url) else { throw ConversionError.unreadable(url.lastPathComponent) }
-        if doc.isLocked { throw ConversionError.toolFailed("\(url.lastPathComponent) is password-protected.") }
+        if doc.isLocked { throw ConversionError.toolFailed(tr("%@ is password-protected.", url.lastPathComponent)) }
         return doc
     }
 
@@ -68,7 +68,7 @@ nonisolated enum PDFEngine {
             }
         }
         let out = OutputNamer.url(named: "Merged", ext: "pdf", in: directory ?? urls[0].deletingLastPathComponent())
-        guard result.write(to: out) else { throw ConversionError.toolFailed("Couldn't write PDF") }
+        guard result.write(to: out) else { throw ConversionError.toolFailed(tr("Couldn't write PDF")) }
         return out
     }
 
@@ -78,7 +78,7 @@ nonisolated enum PDFEngine {
         case .compress:
             let out = OutputNamer.url(for: url, ext: "pdf", suffix: "-compressed", directory: directory)
             let ok = doc.write(to: out, withOptions: [.saveImagesAsJPEGOption: true, .optimizeImagesForScreenOption: true])
-            guard ok else { throw ConversionError.toolFailed("Couldn't write PDF") }
+            guard ok else { throw ConversionError.toolFailed(tr("Couldn't write PDF")) }
             return out
         case .split:
             let folder = OutputNamer.folder(for: url, suffix: " split", directory: directory)
@@ -92,7 +92,7 @@ nonisolated enum PDFEngine {
         case .rotate:
             for i in 0..<doc.pageCount { doc.page(at: i)?.rotation += 90 }
             let out = OutputNamer.url(for: url, ext: "pdf", suffix: "-rotated", directory: directory)
-            guard doc.write(to: out) else { throw ConversionError.toolFailed("Couldn't write PDF") }
+            guard doc.write(to: out) else { throw ConversionError.toolFailed(tr("Couldn't write PDF")) }
             return out
         case .extractImages:
             return try renderPages(url, format: .png, dpi: 300, directory: directory)
@@ -150,7 +150,7 @@ enum SheetEngine {
                 try await Shell.run(soffice, ["--headless", "--convert-to", "csv", "--outdir", dir.path, url.path])
                 return parseDelimited(try readText(dir.appendingPathComponent(url.deletingPathExtension().lastPathComponent + ".csv")), separator: ",")
             }
-            throw ConversionError.toolFailed(".\(url.pathExtension) files need LibreOffice to read. Save as XLSX or CSV first.")
+            throw ConversionError.toolFailed(tr(".%@ files need LibreOffice to read. Save as XLSX or CSV first.", url.pathExtension))
         }
     }
 

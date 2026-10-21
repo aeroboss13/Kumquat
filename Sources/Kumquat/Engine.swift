@@ -9,9 +9,9 @@ nonisolated enum ConversionError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .unreadable(let name): "Couldn't read \(name)."
-        case .unsupported(let what): "\(what) isn't supported."
-        case .missingTool(let tool): "\(tool) is required. Install it with Homebrew: brew install \(tool)"
+        case .unreadable(let name): tr("Couldn't read %@.", name)
+        case .unsupported(let what): tr("%@ isn't supported.", what)
+        case .missingTool(let tool): tr("%@ is required. Install it with Homebrew: brew install %@", tool, tool)
         case .toolFailed(let message): message
         }
     }
@@ -81,7 +81,7 @@ nonisolated enum Shell {
                             .trimmingCharacters(in: .whitespacesAndNewlines)
                         let lastLines = message.split(separator: "\n").suffix(3).joined(separator: "\n")
                         continuation.resume(throwing: ConversionError.toolFailed(
-                            lastLines.isEmpty ? "\(URL(fileURLWithPath: executable).lastPathComponent) failed (\(p.terminationStatus))" : lastLines))
+                            lastLines.isEmpty ? tr("%@ failed (%d)", URL(fileURLWithPath: executable).lastPathComponent, p.terminationStatus) : lastLines))
                     }
                 }
                 do { try process.run() } catch { continuation.resume(throwing: error) }
@@ -257,7 +257,7 @@ nonisolated enum ArchiveEngine {
                 throw ConversionError.missingTool("sevenzip")
             }
         default:
-            throw ConversionError.unsupported(".\(ext) archives")
+            throw ConversionError.unsupported(tr(".%@ archives", ext))
         }
         return dest
     }

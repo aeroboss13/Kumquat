@@ -49,7 +49,7 @@
 
 ### Скачать готовое приложение
 
-1. Скачайте `Kumquat-1.0.dmg` со страницы [Releases](https://github.com/aeroboss13/Kumquat/releases/latest).
+1. Скачайте `Kumquat-1.1.dmg` со страницы [Releases](https://github.com/aeroboss13/Kumquat/releases/latest).
 2. Откройте DMG и перетащите **Kumquat** в папку **Applications**.
 3. Для аудио и видео установите ffmpeg: `brew install ffmpeg`.
 
@@ -90,7 +90,7 @@ brew install ffmpeg
 Чтобы собрать установочный DMG (результат в `build/Kumquat-<версия>.dmg`):
 
 ```bash
-./scripts/make-dmg.sh 1.0
+./scripts/make-dmg.sh 1.1
 ```
 
 ### Дополнительные утилиты (по желанию)
@@ -108,7 +108,8 @@ brew install ffmpeg
 
 ## Настройки
 
-Иконка в строке меню → **Settings…**:
+Иконка в строке меню → **Settings…** («Настройки…»):
+- язык интерфейса: как в системе, English или Русский; переключается сразу, без перезапуска;
 - клавиши для каждого колеса (Shift, Command, Control, Option или выключено);
 - куда сохранять результат: рядом с оригиналом, в «Загрузки» или в свою папку;
 - качество изображений;

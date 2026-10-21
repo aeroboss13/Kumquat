@@ -58,7 +58,7 @@ struct ShelfView: View {
                 Image(systemName: "tray.full").foregroundStyle(WheelView.accent)
                 Spacer()
                 Button { shelf.close() } label: { Image(systemName: "xmark.circle.fill") }
-                    .buttonStyle(.plain).foregroundStyle(.secondary).help("Clear shelf")
+                    .buttonStyle(.plain).foregroundStyle(.secondary).help(tr("Clear shelf"))
             }
             ScrollView {
                 VStack(spacing: 8) {
@@ -73,18 +73,19 @@ struct ShelfView: View {
                         .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 8))
                         .onDrag { NSItemProvider(contentsOf: url) ?? NSItemProvider() }
                         .contextMenu {
-                            Button("Show in Finder") { NSWorkspace.shared.activateFileViewerSelecting([url]) }
-                            Button("Remove from Shelf") { shelf.remove(url) }
+                            Button(tr("Show in Finder")) { NSWorkspace.shared.activateFileViewerSelecting([url]) }
+                            Button(tr("Remove from Shelf")) { shelf.remove(url) }
                         }
                     }
                 }
             }
-            Text("Drag out to use").font(.system(size: 9)).foregroundStyle(.secondary)
+            Text(tr("Drag out to use")).font(.system(size: 9)).foregroundStyle(.secondary)
         }
         .padding(10)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
         .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(targeted ? WheelView.accent : .clear, lineWidth: 2))
+        .id(AppSettings.shared.language)
         .onDrop(of: [.fileURL], isTargeted: $targeted) { providers in
             for provider in providers {
                 _ = provider.loadObject(ofClass: URL.self) { url, _ in

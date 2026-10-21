@@ -27,6 +27,9 @@ cat > "$APP/Contents/Info.plist" <<PLIST
   <key>CFBundleVersion</key><string>1</string>
   <key>LSMinimumSystemVersion</key><string>15.0</string>
   <key>LSUIElement</key><true/>
+  <key>CFBundleDevelopmentRegion</key><string>en</string>
+  <key>CFBundleLocalizations</key><array><string>en</string><string>ru</string></array>
+  <key>CFBundleAllowMixedLocalizations</key><true/>
   <key>LSApplicationCategoryType</key><string>public.app-category.utilities</string>
   <key>NSAppleEventsUsageDescription</key><string>Kumquat uses Pages and Keynote to convert iWork documents.</string>
   <key>CFBundleDocumentTypes</key><array><dict>

@@ -76,21 +76,22 @@ struct MainView: View {
         .frame(width: 560)
         .frame(minHeight: 520)
         .background(.background)
+        .id(settings.language)
     }
 
     private var dropZone: some View {
         VStack(spacing: 12) {
             if state.files.isEmpty {
                 Image(systemName: "arrow.down.doc").font(.system(size: 40, weight: .light)).foregroundStyle(WheelView.accent)
-                Text("Drop files here").font(.title2.weight(.semibold))
+                Text(tr("Drop files here")).font(.title2.weight(.semibold))
                 VStack(spacing: 6) {
-                    hint(settings.convertKey, "Convert formats")
-                    hint(settings.toolsKey, "File tools")
-                    hint(settings.actionsKey, "File actions")
+                    hint(settings.convertKey, tr("Convert formats"))
+                    hint(settings.toolsKey, tr("File tools"))
+                    hint(settings.actionsKey, tr("File actions"))
                 }
-                Text("…or start dragging a file anywhere and tap a key.\nDrop it on a slice of the wheel — the result lands next to the original.")
+                Text(tr("…or start dragging a file anywhere and tap a key.\nDrop it on a slice of the wheel — the result lands next to the original."))
                     .font(.callout).foregroundStyle(.secondary).multilineTextAlignment(.center)
-                Button("Choose Files…", action: choose).controlSize(.large)
+                Button(tr("Choose Files…"), action: choose).controlSize(.large)
             } else {
                 HStack {
                     ScrollView(.horizontal, showsIndicators: false) {
@@ -104,7 +105,7 @@ struct MainView: View {
                         }
                     }
                     Button { state.files = [] } label: { Image(systemName: "xmark.circle.fill").font(.title2) }
-                        .buttonStyle(.plain).foregroundStyle(.secondary).help("Clear")
+                        .buttonStyle(.plain).foregroundStyle(.secondary).help(tr("Clear"))
                 }
             }
         }
@@ -138,7 +139,7 @@ struct MainView: View {
         let ops = Catalog.operations(for: state.files, mode: state.mode)
         return Group {
             if ops.isEmpty {
-                Text("No options for this selection.").foregroundStyle(.secondary).frame(height: 80)
+                Text(tr("No options for this selection.")).foregroundStyle(.secondary).frame(height: 80)
             } else {
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 4), spacing: 10) {
                     ForEach(ops) { op in
@@ -162,16 +163,16 @@ struct MainView: View {
     private var recent: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
-                Text("Recent").font(.headline)
+                Text(tr("Recent")).font(.headline)
                 Spacer()
                 if jobs.jobs.contains(where: { !$0.isRunning }) {
-                    Button("Clear") { jobs.clearFinished() }.buttonStyle(.link)
+                    Button(tr("Clear")) { jobs.clearFinished() }.buttonStyle(.link)
                 }
                 SettingsLink { Image(systemName: "gearshape") }.buttonStyle(.plain).padding(.leading, 8)
             }
             .padding(.horizontal, 20).padding(.vertical, 10)
             if jobs.jobs.isEmpty {
-                Text("Converted files will show up here.").font(.callout).foregroundStyle(.secondary)
+                Text(tr("Converted files will show up here.")).font(.callout).foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, minHeight: 60)
             } else {
                 ScrollView {
@@ -206,13 +207,13 @@ struct MenuBarContent: View {
                 Text("Kumquat").font(.headline)
                 Spacer()
                 Toggle("", isOn: Binding(get: { settings.gestureEnabled }, set: { settings.gestureEnabled = $0 }))
-                    .toggleStyle(.switch).controlSize(.mini).labelsHidden().help("Drag gesture")
+                    .toggleStyle(.switch).controlSize(.mini).labelsHidden().help(tr("Drag gesture"))
             }
-            Text("Drag a file, tap \(settings.convertKey.symbol) \(settings.toolsKey.symbol) \(settings.actionsKey.symbol), drop on the wheel.")
+            Text(tr("Drag a file, tap %@, drop on the wheel.", "\(settings.convertKey.symbol) \(settings.toolsKey.symbol) \(settings.actionsKey.symbol)"))
                 .font(.caption).foregroundStyle(.secondary)
             Divider()
             if jobs.jobs.isEmpty {
-                Text("No conversions yet").font(.callout).foregroundStyle(.secondary).frame(maxWidth: .infinity, minHeight: 40)
+                Text(tr("No conversions yet")).font(.callout).foregroundStyle(.secondary).frame(maxWidth: .infinity, minHeight: 40)
             } else {
                 ScrollView {
                     VStack(spacing: 10) { ForEach(jobs.jobs.prefix(12)) { JobRow(job: $0) } }
@@ -221,15 +222,16 @@ struct MenuBarContent: View {
             }
             Divider()
             HStack {
-                Button("Open Window") { openWindow(id: "main"); NSApp.activate() }
-                SettingsLink { Text("Settings…") }
+                Button(tr("Open Window")) { openWindow(id: "main"); NSApp.activate() }
+                SettingsLink { Text(tr("Settings…")) }
                 Spacer()
-                Button("Quit") { NSApp.terminate(nil) }
+                Button(tr("Quit")) { NSApp.terminate(nil) }
             }
             .buttonStyle(.borderless)
         }
         .padding(14)
         .frame(width: 340)
+        .id(settings.language)
     }
 }
 
@@ -241,50 +243,56 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
-            Section("Wheel keys — tap while dragging") {
-                Picker("Convert formats", selection: $settings.convertKey) { keyOptions }
-                Picker("File tools", selection: $settings.toolsKey) { keyOptions }
-                Picker("File actions", selection: $settings.actionsKey) { keyOptions }
-                Toggle("Enable drag gesture", isOn: $settings.gestureEnabled)
+            Section(tr("Language")) {
+                Picker(tr("Interface language"), selection: $settings.language) {
+                    ForEach(AppLanguage.allCases) { Text($0.title).tag($0) }
+                }
             }
-            Section("Output") {
-                Picker("Save converted files", selection: $settings.outputLocation) {
+            Section(tr("Wheel keys — tap while dragging")) {
+                Picker(tr("Convert formats"), selection: $settings.convertKey) { keyOptions }
+                Picker(tr("File tools"), selection: $settings.toolsKey) { keyOptions }
+                Picker(tr("File actions"), selection: $settings.actionsKey) { keyOptions }
+                Toggle(tr("Enable drag gesture"), isOn: $settings.gestureEnabled)
+            }
+            Section(tr("Output")) {
+                Picker(tr("Save converted files"), selection: $settings.outputLocation) {
                     ForEach(OutputLocation.allCases) { Text($0.title).tag($0) }
                 }
                 .onChange(of: settings.outputLocation) { _, new in
                     if new == .custom { pickFolder() }
                 }
                 if settings.outputLocation == .custom {
-                    LabeledContent("Folder") {
-                        Button(settings.customFolder?.lastPathComponent ?? "Choose…", action: pickFolder)
+                    LabeledContent(tr("Folder")) {
+                        Button(settings.customFolder?.lastPathComponent ?? tr("Choose…"), action: pickFolder)
                     }
                 }
-                LabeledContent("Image quality") {
+                LabeledContent(tr("Image quality")) {
                     HStack {
                         Slider(value: $settings.quality, in: 0.4...1.0)
                         Text("\(Int(settings.quality * 100))%").monospacedDigit().frame(width: 40)
                     }
                 }
-                Toggle("Reveal results in Finder", isOn: $settings.revealAfter)
-                Toggle("Play sound when done", isOn: $settings.playSound)
+                Toggle(tr("Reveal results in Finder"), isOn: $settings.revealAfter)
+                Toggle(tr("Play sound when done"), isOn: $settings.playSound)
             }
-            Section("General") {
-                Toggle("Launch at login", isOn: $launchAtLogin)
+            Section(tr("General")) {
+                Toggle(tr("Launch at login"), isOn: $launchAtLogin)
                     .onChange(of: launchAtLogin) { _, new in settings.launchAtLogin = new }
-                Toggle("Open folders in iTerm instead of Terminal", isOn: $settings.useITerm)
+                Toggle(tr("Open folders in iTerm instead of Terminal"), isOn: $settings.useITerm)
             }
-            Section("Helpers") {
-                helper("ffmpeg", "Audio & video")
-                helper("cwebp", "WebP export (falls back to ffmpeg)")
-                helper("7z", "RAR / 7z extraction")
+            Section(tr("Helpers")) {
+                helper("ffmpeg", tr("Audio & video"))
+                helper("cwebp", tr("WebP export (falls back to ffmpeg)"))
+                helper("7z", tr("RAR / 7z extraction"))
                 LabeledContent("Pages") {
-                    Text(ConverterEnvironment.pagesAvailable ? "Installed" : "Not installed — .pages export disabled")
+                    Text(tr(ConverterEnvironment.pagesAvailable ? "Installed" : "Not installed — .pages export disabled"))
                         .foregroundStyle(ConverterEnvironment.pagesAvailable ? .green : .secondary)
                 }
             }
         }
         .formStyle(.grouped)
-        .frame(width: 480, height: 600)
+        .frame(width: 480, height: 640)
+        .id(settings.language)
     }
 
     private var keyOptions: some View {
@@ -294,7 +302,7 @@ struct SettingsView: View {
     private func helper(_ tool: String, _ purpose: String) -> some View {
         LabeledContent(tool) {
             if ConverterEnvironment.tool(tool) != nil {
-                Label("Found", systemImage: "checkmark.circle.fill").foregroundStyle(.green)
+                Label(tr("Found"), systemImage: "checkmark.circle.fill").foregroundStyle(.green)
             } else {
                 Text("brew install \(tool == "7z" ? "sevenzip" : tool == "cwebp" ? "webp" : tool)").font(.caption.monospaced()).textSelection(.enabled)
             }

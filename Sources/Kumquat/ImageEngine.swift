@@ -70,7 +70,7 @@ nonisolated enum ImageEngine {
             let doc = PDFDocument()
             let page = PDFPage(image: NSImage(cgImage: image, size: CGSize(width: image.width, height: image.height)))!
             doc.insert(page, at: 0)
-            guard doc.write(to: url) else { throw ConversionError.toolFailed("Couldn't write PDF") }
+            guard doc.write(to: url) else { throw ConversionError.toolFailed(tr("Couldn't write PDF")) }
             return
         }
         let type = utType(for: format)
@@ -82,7 +82,7 @@ nonisolated enum ImageEngine {
             return
         }
         guard let dest = CGImageDestinationCreateWithURL(url as CFURL, type.identifier as CFString, 1, nil) else {
-            throw ConversionError.unsupported("Writing \(format.rawValue.uppercased())")
+            throw ConversionError.unsupported(tr("Writing %@", format.rawValue.uppercased()))
         }
         var options: [CFString: Any] = [kCGImageDestinationLossyCompressionQuality: quality]
         if keepMetadata {
@@ -91,7 +91,7 @@ nonisolated enum ImageEngine {
             }
         }
         CGImageDestinationAddImage(dest, image, options as CFDictionary)
-        guard CGImageDestinationFinalize(dest) else { throw ConversionError.toolFailed("Couldn't write \(url.lastPathComponent)") }
+        guard CGImageDestinationFinalize(dest) else { throw ConversionError.toolFailed(tr("Couldn't write %@", url.lastPathComponent)) }
     }
 
     /// WebP and (on some systems) AVIF have no ImageIO encoder; hand a PNG to cwebp/avifenc/ffmpeg.
@@ -174,7 +174,7 @@ nonisolated enum ImageEngine {
         }
         let out = OutputNamer.url(named: urls.count == 1 ? urls[0].deletingPathExtension().lastPathComponent : "Combined",
                                   ext: "pdf", in: directory ?? urls[0].deletingLastPathComponent())
-        guard doc.write(to: out) else { throw ConversionError.toolFailed("Couldn't write PDF") }
+        guard doc.write(to: out) else { throw ConversionError.toolFailed(tr("Couldn't write PDF")) }
         return out
     }
 
@@ -187,7 +187,7 @@ nonisolated enum ImageEngine {
         let height = Int(CGFloat(rows) * cell + CGFloat(rows + 1) * gap)
         guard let ctx = CGContext(data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0,
                                   space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
-        else { throw ConversionError.toolFailed("Couldn't create collage") }
+        else { throw ConversionError.toolFailed(tr("Couldn't create collage")) }
         ctx.setFillColor(CGColor(gray: 1, alpha: 1))
         ctx.fill(CGRect(x: 0, y: 0, width: width, height: height))
         for (i, image) in images.enumerated() {
@@ -290,7 +290,7 @@ nonisolated enum ImageEngine {
         let request = VNGenerateForegroundInstanceMaskRequest()
         let handler = VNImageRequestHandler(cgImage: image)
         try handler.perform([request])
-        guard let result = request.results?.first else { throw ConversionError.toolFailed("No subject found in the image") }
+        guard let result = request.results?.first else { throw ConversionError.toolFailed(tr("No subject found in the image")) }
         let buffer = try result.generateMaskedImage(ofInstances: result.allInstances, from: handler, croppedToInstancesExtent: false)
         let ci = CIImage(cvPixelBuffer: buffer)
         return render(ci)
@@ -304,7 +304,7 @@ nonisolated enum ImageEngine {
         let w = CGFloat(image.width), h = CGFloat(image.height)
         var rects = (faces.results ?? []).map { VNImageRectForNormalizedRect($0.boundingBox, Int(w), Int(h)).insetBy(dx: -w * 0.02, dy: -h * 0.03) }
         rects += (text.results ?? []).map { VNImageRectForNormalizedRect($0.boundingBox, Int(w), Int(h)).insetBy(dx: -4, dy: -4) }
-        guard !rects.isEmpty else { throw ConversionError.toolFailed("No faces or text found to redact") }
+        guard !rects.isEmpty else { throw ConversionError.toolFailed(tr("No faces or text found to redact")) }
 
         let original = CIImage(cgImage: image)
         let pixel = CIFilter.pixellate()

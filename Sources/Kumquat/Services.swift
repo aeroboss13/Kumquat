@@ -29,7 +29,7 @@ enum ModifierKey: String, CaseIterable, Identifiable {
         }
     }
 
-    var title: String { self == .none ? "Off" : "\(symbol) \(rawValue.capitalized)" }
+    var title: String { self == .none ? tr("Off") : "\(symbol) \(rawValue.capitalized)" }
 }
 
 enum OutputLocation: String, CaseIterable, Identifiable {
@@ -37,9 +37,9 @@ enum OutputLocation: String, CaseIterable, Identifiable {
     var id: String { rawValue }
     var title: String {
         switch self {
-        case .nextToOriginal: "Next to the original"
-        case .downloads: "Downloads"
-        case .custom: "Custom folder…"
+        case .nextToOriginal: tr("Next to the original")
+        case .downloads: tr("Downloads")
+        case .custom: tr("Custom folder…")
         }
     }
 }
@@ -59,6 +59,7 @@ final class AppSettings {
     var revealAfter: Bool { didSet { defaults.set(revealAfter, forKey: "revealAfter") } }
     var gestureEnabled: Bool { didSet { defaults.set(gestureEnabled, forKey: "gestureEnabled") } }
     var useITerm: Bool { didSet { defaults.set(useITerm, forKey: "useITerm") } }
+    var language: AppLanguage { didSet { defaults.set(language.rawValue, forKey: AppLanguage.defaultsKey) } }
 
     var launchAtLogin: Bool {
         get { SMAppService.mainApp.status == .enabled }
@@ -80,6 +81,7 @@ final class AppSettings {
         revealAfter = defaults.bool(forKey: "revealAfter")
         gestureEnabled = defaults.bool(forKey: "gestureEnabled")
         useITerm = defaults.bool(forKey: "useITerm")
+        language = AppLanguage(rawValue: defaults.string(forKey: AppLanguage.defaultsKey) ?? "") ?? .system
     }
 
     func mode(for key: NSEvent.ModifierFlags) -> WheelMode? {
@@ -132,18 +134,18 @@ final class JobCenter {
             FileActions.perform(action, on: urls)
             return
         }
-        let name = urls.count == 1 ? urls[0].lastPathComponent : "\(urls.count) files"
+        let name = urls.count == 1 ? urls[0].lastPathComponent : tr("%d files", urls.count)
         var job = Job(title: "\(operation.detail) · \(name)", inputs: urls, state: .running(0))
         let id = job.id
         let engine = Engine(settings: AppSettings.shared.conversionSettings)
         job.task = Task {
             do {
-                let outputs = try await engine.run(operation.action, inputs: urls) { [weak self] value in
-                    Task { @MainActor in self?.update(id, .running(value)) }
+                let outputs = try await engine.run(operation.action, inputs: urls) { value in
+                    Task { @MainActor in JobCenter.shared.update(id, .running(value)) }
                 }
                 finish(id, .done(outputs))
             } catch is CancellationError {
-                finish(id, .failed("Cancelled"))
+                finish(id, .failed(tr("Cancelled")))
             } catch {
                 finish(id, .failed(error.localizedDescription))
             }
@@ -193,19 +195,19 @@ enum FileActions {
         case .copy:
             NSPasteboard.general.clearContents()
             NSPasteboard.general.writeObjects(urls as [NSURL])
-            HUD.shared.flash("Copied \(urls.count == 1 ? urls[0].lastPathComponent : "\(urls.count) items")", symbol: "doc.on.doc")
+            HUD.shared.flash(tr("Copied %@", urls.count == 1 ? urls[0].lastPathComponent : tr("%d items", urls.count)), symbol: "doc.on.doc")
         case .copyPath:
             NSPasteboard.general.clearContents()
             NSPasteboard.general.setString(urls.map(\.path).joined(separator: "\n"), forType: .string)
-            HUD.shared.flash("Path copied", symbol: "link")
+            HUD.shared.flash(tr("Path copied"), symbol: "link")
         case .move:
             NSApp.activate()
             let panel = NSOpenPanel()
             panel.canChooseDirectories = true
             panel.canChooseFiles = false
             panel.canCreateDirectories = true
-            panel.prompt = "Move Here"
-            panel.message = "Move \(urls.count == 1 ? urls[0].lastPathComponent : "\(urls.count) items") to…"
+            panel.prompt = tr("Move Here")
+            panel.message = tr("Move %@ to…", urls.count == 1 ? urls[0].lastPathComponent : tr("%d items", urls.count))
             guard panel.runModal() == .OK, let dest = panel.url else { return }
             var moved: [URL] = []
             for url in urls {
@@ -213,7 +215,7 @@ enum FileActions {
                 do { try FileManager.default.moveItem(at: url, to: target); moved.append(target) }
                 catch { NSAlert(error: error).runModal() }
             }
-            if !moved.isEmpty { HUD.shared.flash("Moved to \(dest.lastPathComponent)", symbol: "folder") }
+            if !moved.isEmpty { HUD.shared.flash(tr("Moved to %@", dest.lastPathComponent), symbol: "folder") }
         case .terminal:
             let url = urls[0]
             let folder = url.hasDirectoryPath ? url : url.deletingLastPathComponent()

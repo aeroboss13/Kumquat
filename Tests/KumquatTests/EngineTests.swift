@@ -132,3 +132,29 @@ struct EngineTests {
         }
     }
 }
+
+struct LocalizationTests {
+    /// Every literal passed to tr() in the app sources must have a Russian translation.
+    @Test func everyStringIsTranslated() throws {
+        let sources = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("Sources/Kumquat")
+        var missing: [String] = []
+        for file in try FileManager.default.contentsOfDirectory(at: sources, includingPropertiesForKeys: nil) {
+            let code = try String(contentsOf: file, encoding: .utf8)
+            for match in code.matches(of: /tr\("((?:[^"\\]|\\.)*)"/) {
+                let key = String(match.1).replacingOccurrences(of: "\\n", with: "\n").replacingOccurrences(of: "\\\"", with: "\"")
+                if L10n.ru[key] == nil { missing.append(key) }
+            }
+        }
+        #expect(missing.isEmpty, "Missing ru: \(missing)")
+    }
+
+    @Test func formatsArguments() {
+        UserDefaults.standard.set("ru", forKey: AppLanguage.defaultsKey)
+        defer { UserDefaults.standard.removeObject(forKey: AppLanguage.defaultsKey) }
+        #expect(tr("Convert to %@", "PNG") == "Конвертировать в PNG")
+        #expect(tr("%d files", 3) == "Файлов: 3")
+        #expect(tr("Untranslated fallback") == "Untranslated fallback")
+    }
+}

@@ -250,7 +250,7 @@ struct WheelView: View {
             }
 
             if ops.isEmpty {
-                Text("No options for\nthis file").font(.callout).multilineTextAlignment(.center).foregroundStyle(.secondary)
+                Text(tr("No options for\nthis file")).font(.callout).multilineTextAlignment(.center).foregroundStyle(.secondary)
                     .offset(y: -(inner + outer) / 2)
             }
 
@@ -270,7 +270,7 @@ struct WheelView: View {
                 } else {
                     Text(AppSettings.shared.key(for: model.mode).symbol).font(.system(size: 22, weight: .semibold)).foregroundStyle(Self.accent)
                     Text(model.mode.title).font(.system(size: 10.5, weight: .semibold)).multilineTextAlignment(.center)
-                    Text(model.files.count == 1 ? model.files[0].lastPathComponent : "\(model.files.count) files")
+                    Text(model.files.count == 1 ? model.files[0].lastPathComponent : tr("%d files", model.files.count))
                         .font(.system(size: 9)).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
                     if model.pageCount > 1 {
                         HStack(spacing: 3) {
@@ -384,7 +384,7 @@ struct JobRow: View {
                 case .running(let p):
                     ProgressView(value: p).progressViewStyle(.linear).tint(WheelView.accent)
                 case .done(let urls):
-                    Text(urls.count == 1 ? urls[0].lastPathComponent : "\(urls.count) files created")
+                    Text(urls.count == 1 ? urls[0].lastPathComponent : tr("%d files created", urls.count))
                         .font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
                 case .failed(let message):
                     Text(message).font(.system(size: 11)).foregroundStyle(.red).lineLimit(compact ? 2 : 3)
@@ -393,10 +393,10 @@ struct JobRow: View {
             Spacer(minLength: 4)
             switch job.state {
             case .running:
-                Button { JobCenter.shared.cancel(job.id) } label: { Image(systemName: "stop.circle") }.buttonStyle(.plain).help("Cancel")
+                Button { JobCenter.shared.cancel(job.id) } label: { Image(systemName: "stop.circle") }.buttonStyle(.plain).help(tr("Cancel"))
             case .done(let urls):
                 Button { NSWorkspace.shared.activateFileViewerSelecting(urls) } label: { Image(systemName: "magnifyingglass.circle") }
-                    .buttonStyle(.plain).help("Show in Finder")
+                    .buttonStyle(.plain).help(tr("Show in Finder"))
             case .failed: EmptyView()
             }
         }
