@@ -25,18 +25,25 @@ nonisolated enum PDFEngine {
         return result
     }
 
+    /// The page as a viewer shows it: crop box, with the page's rotation applied.
+    static func displaySize(_ page: PDFPage) -> CGSize {
+        let bounds = page.bounds(for: .cropBox)
+        return abs(page.rotation) % 180 == 0 ? bounds.size : CGSize(width: bounds.height, height: bounds.width)
+    }
+
     static func renderPage(_ page: PDFPage, dpi: CGFloat) -> CGImage? {
-        let bounds = page.bounds(for: .mediaBox)
+        let size = displaySize(page)
         let scale = dpi / 72
-        let w = Int(bounds.width * scale), h = Int(bounds.height * scale)
+        let w = max(1, Int((size.width * scale).rounded())), h = max(1, Int((size.height * scale).rounded()))
         guard let ctx = CGContext(data: nil, width: w, height: h, bitsPerComponent: 8, bytesPerRow: 0,
                                   space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue)
         else { return nil }
         ctx.setFillColor(CGColor(gray: 1, alpha: 1))
         ctx.fill(CGRect(x: 0, y: 0, width: w, height: h))
+        ctx.interpolationQuality = .high
+        // draw(with:to:) already applies the crop box origin and the page's rotation.
         ctx.scaleBy(x: scale, y: scale)
-        ctx.translateBy(x: -bounds.minX, y: -bounds.minY)
-        page.draw(with: .mediaBox, to: ctx)
+        page.draw(with: .cropBox, to: ctx)
         return ctx.makeImage()
     }
 

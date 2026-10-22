@@ -9,42 +9,64 @@ final class DragWatcher {
     static let shared = DragWatcher()
 
     private var timer: Timer?
+    private var activity: (any NSObjectProtocol)?
     private var mouseWasDown = false
     private var changeCountAtMouseDown = 0
-    private var draggedFiles: [URL]?
+    private var lastReadChangeCount = -1
+    private var readAttempts = 0
+    private var draggedFiles: [URL] = []
     private var lastFlags: NSEvent.ModifierFlags = []
     private let dragPasteboard = NSPasteboard(name: .drag)
 
     func start() {
-        timer = Timer.scheduledTimer(withTimeInterval: 1.0 / 60, repeats: true) { _ in
+        // A windowless background app gets App Nap'd: its timers slow to a crawl and taps are missed.
+        // Opt out for as long as the app runs.
+        activity = ProcessInfo.processInfo.beginActivity(options: [.userInitiatedAllowingIdleSystemSleep],
+                                                         reason: "Watching for file drags")
+        let timer = Timer(timeInterval: 1.0 / 60, repeats: true) { _ in
             MainActor.assumeIsolated { DragWatcher.shared.tick() }
         }
-        RunLoop.main.add(timer!, forMode: .common)
+        timer.tolerance = 0
+        RunLoop.main.add(timer, forMode: .common)
+        self.timer = timer
     }
 
     private func tick() {
         let down = NSEvent.pressedMouseButtons & 1 != 0
         if down && !mouseWasDown {
             changeCountAtMouseDown = dragPasteboard.changeCount
-            draggedFiles = nil
+            lastReadChangeCount = -1
+            readAttempts = 0
+            draggedFiles = []
         }
-        if down, draggedFiles == nil, dragPasteboard.changeCount != changeCountAtMouseDown {
+        var dragJustStarted = false
+        let changeCount = dragPasteboard.changeCount
+        // The drag source may bump the change count before it writes the file list,
+        // so keep re-reading for a moment instead of giving up after one empty read.
+        if down, draggedFiles.isEmpty, changeCount != changeCountAtMouseDown,
+           changeCount != lastReadChangeCount || readAttempts < 30 {
+            if changeCount != lastReadChangeCount { readAttempts = 0 }
+            lastReadChangeCount = changeCount
+            readAttempts += 1
             let urls = dragPasteboard.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL] ?? []
-            // Ignore drags that originate from our own floating shelf.
-            draggedFiles = urls.isEmpty ? [] : urls
+            if !urls.isEmpty {
+                draggedFiles = urls
+                dragJustStarted = true
+            }
         }
         if !down && mouseWasDown {
-            draggedFiles = nil
+            draggedFiles = []
             WheelController.shared.dragEnded()
         }
         mouseWasDown = down
 
         let flags = NSEvent.modifierFlags.intersection([.shift, .command, .control, .option])
-        let pressed = flags.subtracting(lastFlags)
+        // A key tapped during the drag, or one already held when the drag began.
+        let trigger = dragJustStarted ? flags : flags.subtracting(lastFlags)
         lastFlags = flags
-        guard AppSettings.shared.gestureEnabled, !pressed.isEmpty, let files = draggedFiles, !files.isEmpty,
-              let mode = AppSettings.shared.mode(for: pressed) else { return }
-        WheelController.shared.keyTapped(mode, files: files)
+        guard AppSettings.shared.gestureEnabled, !trigger.isEmpty, !draggedFiles.isEmpty,
+              let mode = AppSettings.shared.mode(for: trigger) else { return }
+        WheelController.shared.keyTapped(mode, files: draggedFiles)
     }
 }
 
@@ -72,6 +94,8 @@ final class WheelController {
     let model = WheelModel()
     private lazy var panel = WheelPanel(model: model)
     private var hideWork: DispatchWorkItem?
+    /// Bumped on every show so a fade-out that finishes late can't hide a wheel opened after it began.
+    private var generation = 0
 
     static let size: CGFloat = 440
     static let innerRadius: CGFloat = 74
@@ -79,7 +103,7 @@ final class WheelController {
 
     func keyTapped(_ mode: WheelMode, files: [URL]) {
         hideWork?.cancel()
-        if panel.isVisible, model.mode == mode, model.files == files {
+        if panel.isVisible, panel.alphaValue > 0, model.mode == mode, model.files == files {
             // Same key again: next page of options.
             model.page = (model.page + 1) % model.pageCount
             model.hovered = nil
@@ -90,7 +114,8 @@ final class WheelController {
         model.all = Catalog.operations(for: files, mode: mode)
         model.page = 0
         model.hovered = nil
-        if !panel.isVisible {
+        generation += 1
+        if !panel.isVisible || panel.alphaValue < 1 {
             let mouse = NSEvent.mouseLocation
             var frame = NSRect(x: mouse.x - Self.size / 2, y: mouse.y - Self.size / 2, width: Self.size, height: Self.size)
             if let screen = NSScreen.screens.first(where: { NSMouseInRect(mouse, $0.frame, false) }) {
@@ -112,8 +137,11 @@ final class WheelController {
     }
 
     func hide() {
+        hideWork?.cancel()
+        let hiding = generation
         NSAnimationContext.runAnimationGroup({ $0.duration = 0.1; panel.animator().alphaValue = 0 }) {
             MainActor.assumeIsolated {
+                guard self.generation == hiding else { return }
                 self.panel.orderOut(nil)
                 self.model.hovered = nil
             }
@@ -242,7 +270,7 @@ struct WheelView: View {
                 VStack(spacing: 4) {
                     Image(systemName: op.symbol).font(.system(size: ops.count > 8 ? 16 : 19, weight: .semibold))
                     Text(op.title).font(.system(size: ops.count > 8 ? 10 : 11.5, weight: .bold, design: .rounded))
-                        .lineLimit(1).minimumScaleFactor(0.7)
+                        .lineLimit(2).multilineTextAlignment(.center).minimumScaleFactor(0.75)
                 }
                 .frame(width: 74)
                 .foregroundStyle(hovered ? .white : .primary)

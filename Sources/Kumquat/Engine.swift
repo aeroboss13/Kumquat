@@ -177,6 +177,8 @@ nonisolated struct Engine {
             return [try await ArchiveEngine.compress(inputs, format: format, directory: dir)]
         case .extract:
             return try await eachAsync(inputs, progress) { url, _ in try await ArchiveEngine.extract(url, directory: dir) }
+        case .stripMetadata:
+            return try await eachAsync(inputs, progress) { url, _ in try await MetadataEngine.strip(url, directory: dir) }
         case .fileAction:
             return []
         }

@@ -49,7 +49,7 @@ nonisolated enum ImageFormat: String, CaseIterable, Sendable {
 }
 
 nonisolated enum ImageTool: String, Sendable {
-    case compress, resizeHalf, stripMetadata, rotate, flip, grayscale, enhance
+    case compress, resizeHalf, rotate, flip, grayscale, enhance
     case removeBackground, redactFaces, extractText, cropSquare, addBackground
 }
 
@@ -93,6 +93,7 @@ nonisolated enum Action: Hashable, Sendable {
     case archive(ArchiveFormat)
     case extract
     case fileAction(FileAction)
+    case stripMetadata
 }
 
 nonisolated struct Operation: Identifiable, Hashable, Sendable {
@@ -106,6 +107,19 @@ nonisolated struct Operation: Identifiable, Hashable, Sendable {
 /// Builds the menu of operations for a given selection and wheel.
 enum Catalog {
     static func operations(for urls: [URL], mode: WheelMode) -> [Operation] {
+        var ops = baseOperations(for: urls, mode: mode)
+        // Every file (but not a folder) can have its metadata erased from the tools wheel.
+        if mode == .tools, !urls.isEmpty, !urls.contains(where: { FileKind.of($0) == .folder }) {
+            ops.insert(stripMetadata, at: 0)
+        }
+        return ops
+    }
+
+    static var stripMetadata: Operation {
+        Operation(title: tr("Strip metadata"), symbol: "tag.slash", detail: tr("Erase all metadata"), action: .stripMetadata)
+    }
+
+    private static func baseOperations(for urls: [URL], mode: WheelMode) -> [Operation] {
         guard !urls.isEmpty else { return [] }
         if mode == .actions { return fileActions }
 
@@ -148,10 +162,16 @@ enum Catalog {
             if multi { ops.insert(Operation(title: tr("Merge"), symbol: "waveform.badge.plus", detail: tr("Join tracks one after another"), action: .mediaTool(.merge)), at: 0) }
             return ops
         case (.pdf, .convert):
-            return [("docx", "doc.text"), ("pages", "doc.richtext"), ("jpg", "photo"), ("png", "photo.fill"),
-                    ("epub", "book"), ("txt", "text.alignleft"), ("md", "number"), ("rtf", "doc.plaintext")].map {
+            var ops = [("docx", "doc.text"), ("pages", "doc.richtext"), ("jpg", "photo"), ("png", "photo.fill"),
+                       ("epub", "book"), ("txt", "text.alignleft"), ("md", "number"), ("rtf", "doc.plaintext")].map {
                 Operation(title: $0.0.uppercased(), symbol: $0.1, detail: tr("Convert to %@", $0.0.uppercased()), action: .pdfTo($0.0))
             }
+            ops[0] = Operation(title: "DOCX", symbol: "doc.text", detail: tr("Exact copy of every page"), action: .pdfTo("docx"))
+            ops[1] = Operation(title: "PAGES", symbol: "doc.richtext", detail: tr("Exact copy of every page"), action: .pdfTo("pages"))
+            ops.insert(Operation(title: tr("DOCX text"), symbol: "character.cursor.ibeam", detail: tr("Editable text, layout not kept"),
+                                 action: .pdfTo("docx-text")), at: 1)
+            if !ConverterEnvironment.pagesAvailable { ops.removeAll { $0.action == .pdfTo("pages") } }
+            return ops
         case (.pdf, .tools):
             var ops = pdfTools
             if multi { ops.insert(Operation(title: tr("Merge"), symbol: "doc.on.doc", detail: tr("Combine PDFs into one"), action: .pdfTool(.merge)), at: 0) }
@@ -200,7 +220,6 @@ enum Catalog {
     static var imageTools: [Operation] { [
         .init(title: tr("Compress"), symbol: "arrow.down.right.and.arrow.up.left", detail: tr("Smaller file, same look"), action: .imageTool(.compress)),
         .init(title: tr("Resize 50%"), symbol: "arrow.down.left.and.arrow.up.right.square", detail: tr("Half the dimensions"), action: .imageTool(.resizeHalf)),
-        .init(title: tr("Strip EXIF"), symbol: "location.slash", detail: tr("Remove location & camera metadata"), action: .imageTool(.stripMetadata)),
         .init(title: tr("Enhance"), symbol: "wand.and.stars", detail: tr("Auto-adjust exposure and color"), action: .imageTool(.enhance)),
         .init(title: tr("Cut out"), symbol: "person.crop.rectangle", detail: tr("Remove the background"), action: .imageTool(.removeBackground)),
         .init(title: tr("Redact"), symbol: "eye.slash", detail: tr("Blur faces and text"), action: .imageTool(.redactFaces)),

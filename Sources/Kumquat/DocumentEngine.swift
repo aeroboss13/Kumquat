@@ -87,7 +87,7 @@ enum DocumentEngine {
         case .pdf: try PDFRenderer.render(text, to: out)
         case .epub: try await EPUB.write(title: title, xhtmlBody: RichText.xhtml(from: text), to: out)
         case .pages:
-            let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString).appendingPathExtension("docx")
+            let temp = IWork.scratchFile(near: out, ext: "docx")
             defer { try? FileManager.default.removeItem(at: temp) }
             try data(.officeOpenXML).write(to: temp)
             try await IWork.saveAsPages(temp, to: out)
@@ -101,6 +101,22 @@ enum DocumentEngine {
         switch ext {
         case "jpg", "png":
             return try PDFEngine.renderPages(url, format: ext == "jpg" ? .jpg : .png, dpi: 300, directory: directory)
+        case "docx":
+            // An exact copy: each page becomes a full-page image in Word.
+            let out = OutputNamer.url(for: url, ext: "docx", directory: directory)
+            try await PageDocx.write(pdf: url, to: out)
+            return out
+        case "pages":
+            let out = OutputNamer.url(for: url, ext: "pages", directory: directory)
+            let temp = IWork.scratchFile(near: out, ext: "docx")
+            defer { try? FileManager.default.removeItem(at: temp) }
+            try await PageDocx.write(pdf: url, to: temp)
+            try await IWork.saveAsPages(temp, to: out)
+            return out
+        case "docx-text":
+            let text = try PDFEngine.attributedText(url)
+            return try await write(text, title: url.deletingPathExtension().lastPathComponent, as: .docx,
+                                   to: OutputNamer.url(for: url, ext: "docx", suffix: "-text", directory: directory))
         case "txt":
             guard let doc = PDFDocument(url: url) else { throw ConversionError.unreadable(url.lastPathComponent) }
             let out = OutputNamer.url(for: url, ext: "txt", directory: directory)
@@ -460,9 +476,15 @@ enum IWork {
         try await Shell.run("/usr/bin/osascript", ["-e", script, url.path, out.path])
     }
 
-    /// Exports into a private temp folder and returns the file.
+    /// Pages and Keynote are sandboxed and can't open files in our temporary directory,
+    /// so hand-off files live in a hidden spot next to the user's own files instead.
+    static func scratchFile(near url: URL, ext: String) -> URL {
+        url.deletingLastPathComponent().appendingPathComponent(".kumquat-\(UUID().uuidString)").appendingPathExtension(ext)
+    }
+
+    /// Exports into a hidden folder beside the source and returns the file; callers delete its folder.
     static func export(_ url: URL, app: String, as format: String, ext: String) async throws -> URL {
-        let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let dir = url.deletingLastPathComponent().appendingPathComponent(".kumquat-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         let out = dir.appendingPathComponent(url.deletingPathExtension().lastPathComponent).appendingPathExtension(ext)
         try await export(url, app: app, as: format, to: out)

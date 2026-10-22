@@ -64,8 +64,8 @@ nonisolated enum L10n {
         "Smaller file, same look": "Меньше размер, тот же вид",
         "Resize 50%": "Уменьшить 50%",
         "Half the dimensions": "Вдвое меньше по сторонам",
-        "Strip EXIF": "Убрать EXIF",
-        "Remove location & camera metadata": "Удалить геометки и данные камеры",
+        "Strip metadata": "Стереть метаданные",
+        "Erase all metadata": "Стереть все метаданные",
         "Enhance": "Улучшить",
         "Auto-adjust exposure and color": "Автокоррекция экспозиции и цвета",
         "Cut out": "Вырезать",
@@ -112,6 +112,9 @@ nonisolated enum L10n {
         "Extract every page as PNG": "Сохранить каждую страницу в PNG",
         "OCR": "OCR",
         "Recognize text from scans": "Распознать текст со сканов",
+        "Exact copy of every page": "Точная копия всех страниц",
+        "DOCX text": "DOCX текст",
+        "Editable text, layout not kept": "Редактируемый текст, без вёрстки",
 
         // Archives
         "Compress to .zip": "Сжать в .zip",

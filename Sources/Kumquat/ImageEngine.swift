@@ -237,8 +237,6 @@ nonisolated enum ImageEngine {
             return try save(resized, suffix: "-compressed", format: target, quality: 0.6)
         case .resizeHalf:
             return try save(scale(image, by: 0.5), suffix: "-50%")
-        case .stripMetadata:
-            return try save(image, suffix: "-clean", keepMetadata: false)
         case .rotate:
             let ci = CIImage(cgImage: image).oriented(.right)
             return try save(render(ci), suffix: "-rotated")
