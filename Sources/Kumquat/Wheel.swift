@@ -1,4 +1,5 @@
 import AppKit
+import os
 import SwiftUI
 
 // MARK: - Global drag detection
@@ -7,11 +8,15 @@ import SwiftUI
 /// polls the mouse button, the drag pasteboard's change count, and the modifier keys.
 final class DragWatcher {
     static let shared = DragWatcher()
+    static let log = Logger(subsystem: "local.kumquat.converter", category: "drag")
 
     private var timer: Timer?
     private var activity: (any NSObjectProtocol)?
     private var mouseWasDown = false
-    private var changeCountAtMouseDown = 0
+    /// Change count of the drag pasteboard once the previous drag was over. Any newer count seen
+    /// while the button is held is a new drag. Comparing against the count at mouse-down instead is
+    /// racy: a source that writes the pasteboard within the 16 ms before our first tick would be missed.
+    private var consumedChangeCount = 0
     private var lastReadChangeCount = -1
     private var readAttempts = 0
     private var draggedFiles: [URL] = []
@@ -23,27 +28,29 @@ final class DragWatcher {
         // Opt out for as long as the app runs.
         activity = ProcessInfo.processInfo.beginActivity(options: [.userInitiatedAllowingIdleSystemSleep],
                                                          reason: "Watching for file drags")
+        consumedChangeCount = dragPasteboard.changeCount
         let timer = Timer(timeInterval: 1.0 / 60, repeats: true) { _ in
             MainActor.assumeIsolated { DragWatcher.shared.tick() }
         }
         timer.tolerance = 0
         RunLoop.main.add(timer, forMode: .common)
         self.timer = timer
+        Self.log.info("watcher started, pasteboard count \(self.consumedChangeCount)")
     }
 
     private func tick() {
         let down = NSEvent.pressedMouseButtons & 1 != 0
+        let changeCount = dragPasteboard.changeCount
         if down && !mouseWasDown {
-            changeCountAtMouseDown = dragPasteboard.changeCount
             lastReadChangeCount = -1
             readAttempts = 0
             draggedFiles = []
+            Self.log.debug("mouse down, pasteboard count \(changeCount), consumed \(self.consumedChangeCount)")
         }
         var dragJustStarted = false
-        let changeCount = dragPasteboard.changeCount
         // The drag source may bump the change count before it writes the file list,
         // so keep re-reading for a moment instead of giving up after one empty read.
-        if down, draggedFiles.isEmpty, changeCount != changeCountAtMouseDown,
+        if down, draggedFiles.isEmpty, changeCount != consumedChangeCount,
            changeCount != lastReadChangeCount || readAttempts < 30 {
             if changeCount != lastReadChangeCount { readAttempts = 0 }
             lastReadChangeCount = changeCount
@@ -52,10 +59,16 @@ final class DragWatcher {
             if !urls.isEmpty {
                 draggedFiles = urls
                 dragJustStarted = true
+                Self.log.info("file drag detected: \(urls.count) item(s), count \(changeCount), attempt \(self.readAttempts)")
+            } else if readAttempts == 1 || readAttempts == 30 {
+                let types = self.dragPasteboard.types?.map(\.rawValue).joined(separator: ",") ?? "none"
+                Self.log.info("drag without files yet (attempt \(self.readAttempts)), types: \(types, privacy: .public)")
             }
         }
         if !down && mouseWasDown {
+            if !draggedFiles.isEmpty { Self.log.info("mouse up, drag finished") }
             draggedFiles = []
+            consumedChangeCount = changeCount
             WheelController.shared.dragEnded()
         }
         mouseWasDown = down
@@ -63,9 +76,15 @@ final class DragWatcher {
         let flags = NSEvent.modifierFlags.intersection([.shift, .command, .control, .option])
         // A key tapped during the drag, or one already held when the drag began.
         let trigger = dragJustStarted ? flags : flags.subtracting(lastFlags)
+        if flags != lastFlags, down {
+            Self.log.info("modifiers \(flags.rawValue) while down, files \(self.draggedFiles.count)")
+        }
         lastFlags = flags
-        guard AppSettings.shared.gestureEnabled, !trigger.isEmpty, !draggedFiles.isEmpty,
-              let mode = AppSettings.shared.mode(for: trigger) else { return }
+        guard !trigger.isEmpty, !draggedFiles.isEmpty else { return }
+        guard AppSettings.shared.gestureEnabled else { Self.log.info("key ignored: gesture disabled"); return }
+        guard let mode = AppSettings.shared.mode(for: trigger) else {
+            Self.log.info("key \(trigger.rawValue) not mapped to a wheel"); return
+        }
         WheelController.shared.keyTapped(mode, files: draggedFiles)
     }
 }
@@ -115,6 +134,7 @@ final class WheelController {
         model.page = 0
         model.hovered = nil
         generation += 1
+        DragWatcher.log.info("wheel \(mode.rawValue, privacy: .public): \(self.model.all.count) options, visible \(self.panel.isVisible), alpha \(self.panel.alphaValue)")
         if !panel.isVisible || panel.alphaValue < 1 {
             let mouse = NSEvent.mouseLocation
             var frame = NSRect(x: mouse.x - Self.size / 2, y: mouse.y - Self.size / 2, width: Self.size, height: Self.size)
