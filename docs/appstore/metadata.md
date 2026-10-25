@@ -6,7 +6,7 @@
 
 | Поле | Значение |
 |---|---|
-| Name (30) | Kumquat: File Converter |
+| Name (30) | ru: `Kumquat: File Converter`, en-US: `Kumquat Converter` (английское «Kumquat: File Converter» уже занято) |
 | Bundle ID | ru.pabit.kumquat |
 | SKU | kumquat-mac |
 | Primary category | Utilities |
@@ -27,7 +27,7 @@
 
 ## English (primary)
 
-**Subtitle (30):** Drag, tap ⇧, drop. Converted.
+**Subtitle (30):** Drag, tap Shift, drop. Done.  _(символ ⇧ App Store не принимает)_
 
 **Promotional text (170):**
 Convert images, video, audio, PDFs and documents without opening an app: start dragging a file, tap a key, drop it on the wheel. Everything stays on your Mac.
