@@ -7,6 +7,10 @@ APP=build/Kumquat.app
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp .build/release/Kumquat "$APP/Contents/MacOS/Kumquat"
+# Self-contained audio/video: ship the LGPL ffmpeg built by scripts/build-ffmpeg.sh.
+[[ -x vendor/ffmpeg/bin/ffmpeg ]] || ./scripts/build-ffmpeg.sh
+cp vendor/ffmpeg/bin/ffmpeg "$APP/Contents/MacOS/ffmpeg"
+cp vendor/ffmpeg/Acknowledgements.txt "$APP/Contents/Resources/Acknowledgements.txt"
 
 ICONSET=$(mktemp -d)/AppIcon.iconset
 mkdir -p "$ICONSET"

@@ -197,6 +197,32 @@ nonisolated enum L10n {
         "WebP export (falls back to ffmpeg)": "Экспорт WebP (иначе через ffmpeg)",
         "RAR / 7z extraction": "Распаковка RAR / 7z",
         "Off": "Выкл.",
+        "Allow Access": "Разрешить доступ",
+        "Allow access to your home folder": "Разрешите доступ к домашней папке",
+        "So Kumquat can save converted files next to the originals. Files never leave your Mac.":
+            "Чтобы Kumquat сохранял результаты рядом с оригиналами. Файлы никуда не отправляются.",
+        "Allow…": "Разрешить…",
+        "Select your home folder and click Allow Access.": "Выберите домашнюю папку и нажмите «Разрешить доступ».",
+        "Kumquat saves results next to the original. Allow access to “%@” — or choose your home folder to cover every folder at once.":
+            "Kumquat сохраняет результат рядом с оригиналом. Разрешите доступ к папке «%@» — или выберите домашнюю папку, чтобы разрешить сразу все.",
+        "File access": "Доступ к файлам",
+        "No folders yet. Kumquat asks the first time it saves into a folder.": "Пока нет папок. Kumquat спросит при первом сохранении в папку.",
+        "Add Folder…": "Добавить папку…",
+        "Choose a folder Kumquat may save into.": "Выберите папку, в которую Kumquat может сохранять файлы.",
+        "Remove All": "Убрать все",
+        "Open-source licenses": "Лицензии открытого ПО",
+
+        // App Store screenshots
+        "Drag. Tap ⇧. Drop.": "Тащите. ⇧. Бросайте.",
+        "Convert any file without opening an app.": "Конвертируйте любой файл, не открывая приложений.",
+        "Tools under ⌘": "Инструменты под ⌘",
+        "Compress, cut out backgrounds, blur faces, erase metadata.": "Сжатие, вырезание фона, размытие лиц, удаление метаданных.",
+        "Video and audio, too": "Видео и аудио тоже",
+        "MP4, MOV, WebM, GIF, MP3, FLAC and more — all on your Mac.": "MP4, MOV, WebM, GIF, MP3, FLAC и другие — прямо на Mac.",
+        "Prefer clicking? Use the window.": "Любите кликать? Есть окно.",
+        "Drop files in, pick a format. Results land next to the originals.": "Бросьте файлы, выберите формат. Результат — рядом с оригиналом.",
+        "Your files never leave your Mac": "Файлы не покидают ваш Mac",
+        "No uploads, no accounts. Everything is converted locally.": "Без загрузок и аккаунтов. Всё конвертируется локально.",
 
         // Errors
         "Couldn't read %@.": "Не удалось прочитать «%@».",

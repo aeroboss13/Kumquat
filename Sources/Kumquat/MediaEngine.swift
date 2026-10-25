@@ -7,18 +7,27 @@ nonisolated enum MediaEngine {
         return path
     }
 
+    /// Reads the stream summary ffmpeg prints for an input; saves shipping a separate ffprobe.
+    static func probe(_ url: URL) async -> String {
+        guard let ffmpeg = ConverterEnvironment.tool("ffmpeg") else { return "" }
+        return await Shell.capture(ffmpeg, ["-hide_banner", "-i", url.path])
+    }
+
+    /// H.264 through Apple's hardware encoder: present in every ffmpeg on a Mac, unlike the GPL-only x264.
+    /// `quality` is VideoToolbox constant quality, 1–100.
+    static func h264(quality: Int) -> [String] {
+        ["-c:v", "h264_videotoolbox", "-q:v", String(quality), "-allow_sw", "1", "-pix_fmt", "yuv420p", "-tag:v", "avc1"]
+    }
+
     static func duration(of url: URL) async -> Double? {
-        guard let ffprobe = ConverterEnvironment.tool("ffprobe"),
-              let out = try? await Shell.run(ffprobe, ["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", url.path])
-        else { return nil }
-        return Double(out.trimmingCharacters(in: .whitespacesAndNewlines))
+        guard let m = await probe(url).firstMatch(of: /Duration: (\d+):(\d+):(\d+(?:\.\d+)?)/),
+              let h = Double(m.1), let min = Double(m.2), let s = Double(m.3) else { return nil }
+        return h * 3600 + min * 60 + s
     }
 
     static func hasVideo(_ url: URL) async -> Bool {
-        guard let ffprobe = ConverterEnvironment.tool("ffprobe"),
-              let out = try? await Shell.run(ffprobe, ["-v", "error", "-select_streams", "v", "-show_entries", "stream=codec_type", "-of", "csv=p=0", url.path])
-        else { return true }
-        return out.contains("video")
+        // Cover art in audio files shows up as an attached-picture video stream; that doesn't count.
+        await probe(url).split(separator: "\n").contains { $0.contains("Video:") && !$0.contains("attached pic") }
     }
 
     static func run(input: URL, output: URL, args: [String], inputArgs: [String] = [], speedFactor: Double = 1,
@@ -40,9 +49,9 @@ nonisolated enum MediaEngine {
     static func convert(_ url: URL, to ext: String, directory: URL?, progress: @escaping ProgressHandler) async throws -> URL {
         let out = OutputNamer.url(for: url, ext: ext, directory: directory)
         let args: [String] = switch ext {
-        case "mp4": ["-c:v", "libx264", "-preset", "medium", "-crf", "20", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart"]
-        case "mov": ["-c:v", "libx264", "-crf", "20", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k"]
-        case "mkv": ["-c:v", "libx264", "-crf", "20", "-c:a", "aac", "-b:a", "192k"]
+        case "mp4": h264(quality: 65) + ["-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart"]
+        case "mov": h264(quality: 65) + ["-c:a", "aac", "-b:a", "192k"]
+        case "mkv": h264(quality: 65) + ["-c:a", "aac", "-b:a", "192k"]
         case "webm": ["-c:v", "libvpx-vp9", "-crf", "32", "-b:v", "0", "-row-mt", "1", "-c:a", "libopus", "-b:a", "128k"]
         case "avi": ["-c:v", "mpeg4", "-q:v", "3", "-c:a", "libmp3lame", "-q:a", "3"]
         case "wmv": ["-c:v", "wmv2", "-b:v", "4M", "-c:a", "wmav2", "-b:a", "192k"]
@@ -68,14 +77,14 @@ nonisolated enum MediaEngine {
         func out(_ suffix: String, _ newExt: String? = nil) -> URL {
             OutputNamer.url(for: url, ext: newExt ?? ext, suffix: suffix, directory: directory)
         }
-        let video = ["-c:v", "libx264", "-crf", "20", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "160k"]
+        let video = h264(quality: 65) + ["-c:a", "aac", "-b:a", "160k"]
         let target: URL
         switch tool {
         case .compressVideo:
             target = out("-compressed", "mp4")
             try await run(input: url, output: target, args: [
                 "-vf", "scale='min(1920,iw)':'min(1080,ih)':force_original_aspect_ratio=decrease:force_divisible_by=2",
-                "-c:v", "libx264", "-preset", "slow", "-crf", "28", "-pix_fmt", "yuv420p",
+            ] + h264(quality: 45) + [
                 "-c:a", "aac", "-b:a", "128k", "-movflags", "+faststart"], progress: progress)
         case .extractAudio:
             target = out("", "m4a")
@@ -136,7 +145,7 @@ nonisolated enum MediaEngine {
         }
         filter += urls.indices.map { isVideo ? "[v\($0)][a\($0)]" : "[a\($0)]" }.joined()
         filter += "concat=n=\(urls.count):v=\(isVideo ? 1 : 0):a=1" + (isVideo ? "[v][a]" : "[a]")
-        let map = isVideo ? ["-map", "[v]", "-map", "[a]", "-c:v", "libx264", "-crf", "20", "-pix_fmt", "yuv420p", "-c:a", "aac"]
+        let map = isVideo ? ["-map", "[v]", "-map", "[a]"] + h264(quality: 65) + ["-c:a", "aac"]
                           : ["-map", "[a]"] + (ext == "wav" ? [] : ["-c:a", "aac", "-b:a", "256k"])
         let args = ["-y", "-hide_banner", "-loglevel", "error", "-nostats", "-progress", "pipe:1"] + inputs
             + ["-filter_complex", filter] + map + [out.path]

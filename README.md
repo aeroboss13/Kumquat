@@ -77,18 +77,20 @@ xattr -dr com.apple.quarantine /Applications/Kumquat.app
 #### Требования
 - macOS 15 или новее, Mac на Apple silicon
 - Xcode (или Command Line Tools) со Swift 6.2+
-- [Homebrew](https://brew.sh) для дополнительных утилит
+- [Homebrew](https://brew.sh): библиотеки кодеков, из которых собирается встроенный ffmpeg
 
 #### Шаги
 
 ```bash
 git clone https://github.com/aeroboss13/Kumquat.git
 cd Kumquat
-brew install ffmpeg
+brew install lame opus libvorbis libvpx webp pkgconf
 ./scripts/build-app.sh --install
 ```
 
-Скрипт соберёт приложение, скопирует его в `~/Applications/Kumquat.app` и запустит. После запуска в строке меню появится иконка.
+Скрипт при первом запуске соберёт ffmpeg (`scripts/build-ffmpeg.sh`, несколько минут), затем приложение, скопирует его в `~/Applications/Kumquat.app` и запустит. После запуска в строке меню появится иконка.
+
+ffmpeg собирается из официального исходника 9.0.2 без GPL-компонентов (лицензия LGPL 2.1), статически, и кладётся внутрь приложения: устанавливать ffmpeg отдельно не нужно. Видео в H.264/HEVC кодируется аппаратно через VideoToolbox. Лицензии встроенных библиотек — в «Настройки → Лицензии открытого ПО».
 
 Чтобы просто собрать `.app` без установки (результат в `build/Kumquat.app`):
 
@@ -106,14 +108,16 @@ brew install ffmpeg
 
 | Утилита | Для чего | Установка |
 |---|---|---|
-| ffmpeg | аудио и видео (обязательна для них) | `brew install ffmpeg` |
-| cwebp | более качественный экспорт WebP | `brew install webp` |
-| avifenc | экспорт AVIF, если система не умеет сама | `brew install libavif` |
-| 7z | распаковка RAR и 7z | `brew install sevenzip` |
+| cwebp | экспорт WebP (иначе через встроенный ffmpeg) | `brew install webp` |
+| 7z | распаковка RAR и 7z (иначе через системный tar) | `brew install sevenzip` |
 | Pages | экспорт и чтение файлов .pages | App Store |
 | Keynote или LibreOffice | презентации → PDF | App Store / `brew install --cask libreoffice` |
 
 Какие утилиты найдены, видно в настройках приложения, в разделе Helpers.
+
+### Mac App Store
+
+Отдельная сборка для App Store — с песочницей, без Pages/Keynote/LibreOffice — делается скриптом `scripts/build-appstore.sh`. Пошаговая инструкция по публикации: [docs/APP_STORE.md](docs/APP_STORE.md), тексты и скриншоты для страницы: [docs/appstore](docs/appstore). Политика конфиденциальности: [PRIVACY.md](PRIVACY.md).
 
 ## Настройки
 

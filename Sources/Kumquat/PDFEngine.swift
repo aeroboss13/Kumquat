@@ -151,7 +151,7 @@ enum SheetEngine {
         case "xlsx": return try await XLSX.read(url)
         case "ods": return try await ODS.read(url)
         default:
-            if let soffice = ConverterEnvironment.tool("soffice") {
+            if let soffice = ConverterEnvironment.officeSuite {
                 let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
                 defer { try? FileManager.default.removeItem(at: dir) }
                 try await Shell.run(soffice, ["--headless", "--convert-to", "csv", "--outdir", dir.path, url.path])

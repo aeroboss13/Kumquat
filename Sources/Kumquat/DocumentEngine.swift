@@ -133,8 +133,7 @@ enum DocumentEngine {
     // MARK: Slides
 
     static func convertSlides(_ url: URL, to ext: String, directory: URL?) async throws -> URL {
-        if let soffice = ConverterEnvironment.tool("soffice") ?? (FileManager.default.fileExists(atPath: "/Applications/LibreOffice.app")
-                                                              ? "/Applications/LibreOffice.app/Contents/MacOS/soffice" : nil) {
+        if let soffice = ConverterEnvironment.officeSuite {
             let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
             try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
             defer { try? FileManager.default.removeItem(at: tempDir) }

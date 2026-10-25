@@ -184,7 +184,10 @@ enum Catalog {
                 .map { Operation(title: $0 == .md ? "Markdown" : $0.rawValue.uppercased(), symbol: docSymbol($0),
                                  detail: tr("Convert to %@", $0.rawValue.uppercased()), action: .docTo($0)) }
         case (.slides, .convert):
-            return [("pdf", "doc.richtext"), ("jpg", "photo"), ("png", "photo.fill")].map {
+            // Without Keynote or LibreOffice only the first slide can be rendered, so PDF export is offered only with them.
+            return [("pdf", "doc.richtext"), ("jpg", "photo"), ("png", "photo.fill")]
+                .filter { $0.0 != "pdf" || ConverterEnvironment.slidesToPDFAvailable }
+                .map {
                 Operation(title: $0.0.uppercased(), symbol: $0.1, detail: tr("Export slides as %@", $0.0.uppercased()), action: .slidesTo($0.0))
             }
         case (.spreadsheet, .convert):

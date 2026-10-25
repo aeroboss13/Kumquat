@@ -137,7 +137,13 @@ final class JobCenter {
         let name = urls.count == 1 ? urls[0].lastPathComponent : tr("%d files", urls.count)
         var job = Job(title: "\(operation.detail) · \(name)", inputs: urls, state: .running(0))
         let id = job.id
-        let engine = Engine(settings: AppSettings.shared.conversionSettings)
+        var settings = AppSettings.shared.conversionSettings
+        // In the sandbox the destination folder may need a grant; if the user declines, use Downloads.
+        let destinations = settings.outputDirectory.map { [$0] } ?? urls.map { $0.deletingLastPathComponent() }
+        if !FileAccess.shared.ensureWritable(destinations) {
+            settings.outputDirectory = FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first
+        }
+        let engine = Engine(settings: settings)
         job.task = Task {
             do {
                 let outputs = try await engine.run(operation.action, inputs: urls) { value in
@@ -209,6 +215,8 @@ enum FileActions {
             panel.prompt = tr("Move Here")
             panel.message = tr("Move %@ to…", urls.count == 1 ? urls[0].lastPathComponent : tr("%d items", urls.count))
             guard panel.runModal() == .OK, let dest = panel.url else { return }
+            // Moving also writes to the source folders, which the sandbox may not cover yet.
+            guard FileAccess.shared.ensureWritable(urls.map { $0.deletingLastPathComponent() }) else { return }
             var moved: [URL] = []
             for url in urls {
                 let target = OutputNamer.unique(dest.appendingPathComponent(url.lastPathComponent))

@@ -28,6 +28,15 @@ struct KumquatApp: App {
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
+        if let i = CommandLine.arguments.firstIndex(of: "--screenshots"), i + 1 < CommandLine.arguments.count {
+            Screenshots.render(to: URL(fileURLWithPath: CommandLine.arguments[i + 1]))
+            exit(0)
+        }
+        if CommandLine.arguments.contains("--selftest") {
+            Task { exit(await SelfTest.run() ? 0 : 1) }
+            return
+        }
+        FileAccess.shared.restore()
         DragWatcher.shared.start()
         if !UserDefaults.standard.bool(forKey: "launchedBefore") {
             UserDefaults.standard.set(true, forKey: "launchedBefore")
@@ -62,6 +71,9 @@ struct MainView: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            if ConverterEnvironment.isAppStore && !FileAccess.shared.hasHomeAccess {
+                accessBanner.padding([.horizontal, .top], 20)
+            }
             dropZone.padding(20)
             if !state.files.isEmpty {
                 Picker("", selection: $state.mode) {
@@ -77,6 +89,24 @@ struct MainView: View {
         .frame(minHeight: 520)
         .background(.background)
         .id(settings.language)
+    }
+
+    /// Sandbox onboarding: one grant of the home folder lets results land next to originals everywhere.
+    private var accessBanner: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "folder.badge.person.crop").font(.title2).foregroundStyle(WheelView.accent)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(tr("Allow access to your home folder")).font(.callout.weight(.semibold))
+                Text(tr("So Kumquat can save converted files next to the originals. Files never leave your Mac."))
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            Spacer()
+            Button(tr("Allow…")) {
+                FileAccess.shared.requestAccess(message: tr("Select your home folder and click Allow Access."))
+            }
+        }
+        .padding(12)
+        .background(WheelView.accent.opacity(0.1), in: RoundedRectangle(cornerRadius: 12))
     }
 
     private var dropZone: some View {
@@ -280,13 +310,38 @@ struct SettingsView: View {
                     .onChange(of: launchAtLogin) { _, new in settings.launchAtLogin = new }
                 Toggle(tr("Open folders in iTerm instead of Terminal"), isOn: $settings.useITerm)
             }
-            Section(tr("Helpers")) {
-                helper("ffmpeg", tr("Audio & video"))
-                helper("cwebp", tr("WebP export (falls back to ffmpeg)"))
-                helper("7z", tr("RAR / 7z extraction"))
-                LabeledContent("Pages") {
-                    Text(tr(ConverterEnvironment.pagesAvailable ? "Installed" : "Not installed — .pages export disabled"))
-                        .foregroundStyle(ConverterEnvironment.pagesAvailable ? .green : .secondary)
+            if ConverterEnvironment.isAppStore {
+                Section(tr("File access")) {
+                    ForEach(FileAccess.shared.grantedFolders, id: \.self) { url in
+                        Label(url.path, systemImage: "folder").lineLimit(1).truncationMode(.middle)
+                    }
+                    if FileAccess.shared.grantedFolders.isEmpty {
+                        Text(tr("No folders yet. Kumquat asks the first time it saves into a folder.")).foregroundStyle(.secondary)
+                    }
+                    HStack {
+                        Button(tr("Add Folder…")) { FileAccess.shared.requestAccess(message: tr("Choose a folder Kumquat may save into.")) }
+                        Spacer()
+                        if !FileAccess.shared.grantedFolders.isEmpty {
+                            Button(tr("Remove All"), role: .destructive) { FileAccess.shared.revokeAll() }
+                        }
+                    }
+                }
+            } else {
+                Section(tr("Helpers")) {
+                    helper("ffmpeg", tr("Audio & video"))
+                    helper("cwebp", tr("WebP export (falls back to ffmpeg)"))
+                    helper("7z", tr("RAR / 7z extraction"))
+                    LabeledContent("Pages") {
+                        Text(tr(ConverterEnvironment.pagesAvailable ? "Installed" : "Not installed — .pages export disabled"))
+                            .foregroundStyle(ConverterEnvironment.pagesAvailable ? .green : .secondary)
+                    }
+                }
+            }
+            if Bundle.main.url(forResource: "Acknowledgements", withExtension: "txt") != nil {
+                Section {
+                    Button(tr("Open-source licenses")) {
+                        if let url = Bundle.main.url(forResource: "Acknowledgements", withExtension: "txt") { NSWorkspace.shared.open(url) }
+                    }
                 }
             }
         }
@@ -315,7 +370,10 @@ struct SettingsView: View {
         panel.canChooseDirectories = true
         panel.canChooseFiles = false
         panel.canCreateDirectories = true
-        if panel.runModal() == .OK { settings.customFolder = panel.url }
+        if panel.runModal() == .OK, let url = panel.url {
+            FileAccess.shared.add(url)
+            settings.customFolder = url
+        }
         else if settings.customFolder == nil { settings.outputLocation = .nextToOriginal }
     }
 }

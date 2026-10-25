@@ -28,18 +28,62 @@ typealias ProgressHandler = @Sendable (Double) -> Void
 /// Locates optional command-line helpers. Everything core uses system frameworks;
 /// audio/video goes through ffmpeg because AVFoundation can't write WebM, MKV, OGG, etc.
 nonisolated enum ConverterEnvironment {
+    #if APPSTORE
+    /// The App Store build is sandboxed and self-contained: only tools inside the bundle and the system's own.
+    static let isAppStore = true
+    static let searchPaths = ["/usr/bin", "/bin"]
+    #else
+    static let isAppStore = false
     static let searchPaths = ["/opt/homebrew/bin", "/usr/local/bin", "/usr/bin", "/bin", "/opt/local/bin"]
+    #endif
 
+    /// Tools shipped inside the app (ffmpeg) win over anything installed on the system.
     static func tool(_ name: String) -> String? {
-        searchPaths.map { "\($0)/\(name)" }.first { FileManager.default.isExecutableFile(atPath: $0) }
+        if let bundled = Bundle.main.url(forAuxiliaryExecutable: name)?.path,
+           FileManager.default.isExecutableFile(atPath: bundled) { return bundled }
+        return searchPaths.map { "\($0)/\(name)" }.first { FileManager.default.isExecutableFile(atPath: $0) }
     }
 
-    static var pagesAvailable: Bool { FileManager.default.fileExists(atPath: "/Applications/Pages.app") }
-    static var keynoteAvailable: Bool { FileManager.default.fileExists(atPath: "/Applications/Keynote.app") }
+    /// Pages and Keynote are driven through AppleScript, which the App Store sandbox doesn't allow.
+    static var pagesAvailable: Bool { !isAppStore && FileManager.default.fileExists(atPath: "/Applications/Pages.app") }
+    static var keynoteAvailable: Bool { !isAppStore && FileManager.default.fileExists(atPath: "/Applications/Keynote.app") }
+
+    static var officeSuite: String? {
+        guard !isAppStore else { return nil }
+        let bundled = "/Applications/LibreOffice.app/Contents/MacOS/soffice"
+        return tool("soffice") ?? (FileManager.default.isExecutableFile(atPath: bundled) ? bundled : nil)
+    }
+
+    static var slidesToPDFAvailable: Bool { keynoteAvailable || officeSuite != nil }
 }
 
 nonisolated enum Shell {
     /// Runs a process and returns stdout. `onLine` receives stdout lines as they arrive.
+    /// Runs a process and returns stdout and stderr together, whatever its exit status.
+    static func capture(_ executable: String, _ arguments: [String]) async -> String {
+        await withCheckedContinuation { continuation in
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: executable)
+            process.arguments = arguments
+            let pipe = Pipe()
+            process.standardOutput = pipe
+            process.standardError = pipe
+            process.standardInput = FileHandle.nullDevice
+            let output = OSAllocatedUnfairLock(initialState: Data())
+            pipe.fileHandleForReading.readabilityHandler = { handle in
+                let chunk = handle.availableData
+                output.withLock { $0.append(chunk) }
+            }
+            process.terminationHandler = { _ in
+                pipe.fileHandleForReading.readabilityHandler = nil
+                let rest = pipe.fileHandleForReading.readDataToEndOfFile()
+                output.withLock { $0.append(rest) }
+                continuation.resume(returning: String(decoding: output.withLock { $0 }, as: UTF8.self))
+            }
+            do { try process.run() } catch { continuation.resume(returning: "") }
+        }
+    }
+
     @discardableResult
     static func run(_ executable: String, _ arguments: [String], currentDirectory: URL? = nil,
                     onLine: (@Sendable (String) -> Void)? = nil) async throws -> String {
@@ -255,8 +299,8 @@ nonisolated enum ArchiveEngine {
             } else if let unar = ConverterEnvironment.tool("unar") {
                 try await Shell.run(unar, ["-q", "-o", dest.path, "-f", "-D", url.path])
             } else {
-                try? FileManager.default.removeItem(at: dest)
-                throw ConversionError.missingTool("sevenzip")
+                // The system tar is bsdtar (libarchive), which reads RAR and 7z on its own.
+                try await Shell.run("/usr/bin/tar", ["-xf", url.path, "-C", dest.path])
             }
         default:
             throw ConversionError.unsupported(tr(".%@ archives", ext))
