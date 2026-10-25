@@ -1,0 +1,46 @@
+# Xcode project for the Mac App Store edition. Generate with: xcodegen generate
+name: Kumquat
+options:
+  bundleIdPrefix: ru.pabit
+  deploymentTarget:
+    macOS: "15.0"
+settings:
+  base:
+    DEVELOPMENT_TEAM: 9R756Z2ZZG
+    MARKETING_VERSION: "1.2"
+    CURRENT_PROJECT_VERSION: "1"
+targets:
+  Kumquat:
+    type: application
+    platform: macOS
+    sources:
+      - path: Sources/Kumquat
+      - path: Resources/Assets.xcassets
+      - path: vendor/ffmpeg/Acknowledgements.txt
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: ru.pabit.kumquat
+        PRODUCT_NAME: Kumquat
+        INFOPLIST_FILE: Resources/AppStore-Info.plist
+        CODE_SIGN_ENTITLEMENTS: Resources/AppStore.entitlements
+        CODE_SIGN_STYLE: Automatic
+        ENABLE_HARDENED_RUNTIME: YES
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ARCHS: arm64
+        SWIFT_VERSION: "6.0"
+        SWIFT_DEFAULT_ACTOR_ISOLATION: MainActor
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) APPSTORE"
+        COMBINE_HIDPI_IMAGES: YES
+    copyFiles: []
+    postCompileScripts:
+      - name: Embed ffmpeg
+        script: |
+          mkdir -p "$TARGET_BUILD_DIR/$EXECUTABLE_FOLDER_PATH"
+          cp "$SRCROOT/vendor/ffmpeg/bin/ffmpeg" "$TARGET_BUILD_DIR/$EXECUTABLE_FOLDER_PATH/ffmpeg"
+          "$SRCROOT/scripts/sign-helper.sh"
+        inputFiles:
+          - $(SRCROOT)/vendor/ffmpeg/bin/ffmpeg
+        outputFiles:
+          - $(TARGET_BUILD_DIR)/$(EXECUTABLE_FOLDER_PATH)/ffmpeg
+        basedOnDependencyAnalysis: false

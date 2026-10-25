@@ -7,7 +7,7 @@
 | Поле | Значение |
 |---|---|
 | Name (30) | Kumquat: File Converter |
-| Bundle ID | com.pavelbardin.kumquat |
+| Bundle ID | ru.pabit.kumquat |
 | SKU | kumquat-mac |
 | Primary category | Utilities |
 | Secondary category | Productivity |

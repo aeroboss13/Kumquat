@@ -1,7 +1,7 @@
 .build/
 build/
 .swiftpm/
-*.xcodeproj/
 xcuserdata/
 .DS_Store
 vendor/
+Kumquat.xcodeproj/
