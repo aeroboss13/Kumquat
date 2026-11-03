@@ -139,7 +139,7 @@ AirDrop, плавающая полка для файлов, копировани
 Kumquat is a menu bar utility (LSUIElement), so it shows no Dock icon. On first launch it opens its main window.
 
 HOW TO TEST
-1. In the window, click "Allow…" and choose the home folder. This grants the sandbox permission to save converted files next to the originals (security-scoped bookmark). Without it, Kumquat asks per folder or saves to Downloads.
+1. Kumquat never asks for administrator rights and shows no permission prompt at launch. Because it is sandboxed, the first time a result is saved into a folder, it shows the standard macOS folder panel preselected to that folder ("Allow Access"), so the converted file can be written next to the original. If declined, the result goes to Downloads.
 2. In Finder, start dragging any image. While still holding the mouse button, tap Shift. A wheel opens around the cursor.
 3. Drop the file on "PNG". A PNG copy appears next to the original and a notification shows in the top-right corner.
 4. Repeat with Command (tools, e.g. "Erase all metadata") and Control (AirDrop, copy, move…).

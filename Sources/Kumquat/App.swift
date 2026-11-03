@@ -71,9 +71,6 @@ struct MainView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            if ConverterEnvironment.isAppStore && !FileAccess.shared.hasHomeAccess {
-                accessBanner.padding([.horizontal, .top], 20)
-            }
             dropZone.padding(20)
             if !state.files.isEmpty {
                 Picker("", selection: $state.mode) {
@@ -89,24 +86,6 @@ struct MainView: View {
         .frame(minHeight: 520)
         .background(.background)
         .id(settings.language)
-    }
-
-    /// Sandbox onboarding: one grant of the home folder lets results land next to originals everywhere.
-    private var accessBanner: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "folder.badge.person.crop").font(.title2).foregroundStyle(WheelView.accent)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(tr("Allow access to your home folder")).font(.callout.weight(.semibold))
-                Text(tr("So Kumquat can save converted files next to the originals. Files never leave your Mac."))
-                    .font(.caption).foregroundStyle(.secondary)
-            }
-            Spacer()
-            Button(tr("Allow…")) {
-                FileAccess.shared.requestAccess(message: tr("Select your home folder and click Allow Access."))
-            }
-        }
-        .padding(12)
-        .background(WheelView.accent.opacity(0.1), in: RoundedRectangle(cornerRadius: 12))
     }
 
     private var dropZone: some View {

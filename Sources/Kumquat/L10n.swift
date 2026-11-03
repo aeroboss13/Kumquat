@@ -198,13 +198,8 @@ nonisolated enum L10n {
         "RAR / 7z extraction": "Распаковка RAR / 7z",
         "Off": "Выкл.",
         "Allow Access": "Разрешить доступ",
-        "Allow access to your home folder": "Разрешите доступ к домашней папке",
-        "So Kumquat can save converted files next to the originals. Files never leave your Mac.":
-            "Чтобы Kumquat сохранял результаты рядом с оригиналами. Файлы никуда не отправляются.",
-        "Allow…": "Разрешить…",
-        "Select your home folder and click Allow Access.": "Выберите домашнюю папку и нажмите «Разрешить доступ».",
-        "Kumquat saves results next to the original. Allow access to “%@” — or choose your home folder to cover every folder at once.":
-            "Kumquat сохраняет результат рядом с оригиналом. Разрешите доступ к папке «%@» — или выберите домашнюю папку, чтобы разрешить сразу все.",
+        "Kumquat saves results next to the original. Allow it to save into “%@”.":
+            "Kumquat сохраняет результат рядом с оригиналом. Разрешите сохранять в папку «%@».",
         "File access": "Доступ к файлам",
         "No folders yet. Kumquat asks the first time it saves into a folder.": "Пока нет папок. Kumquat спросит при первом сохранении в папку.",
         "Add Folder…": "Добавить папку…",

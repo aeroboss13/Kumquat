@@ -24,11 +24,6 @@ final class FileAccess {
         UserDefaults.standard.set(refreshed, forKey: defaultsKey)
     }
 
-    var hasHomeAccess: Bool {
-        let home = FileManager.default.homeDirectoryForCurrentUser.standardizedFileURL.path
-        return grantedFolders.contains { $0.standardizedFileURL.path == home }
-    }
-
     /// Whether files can be created in `folder` right now (sandbox grants included).
     nonisolated static func isWritable(_ folder: URL) -> Bool {
         let probe = folder.appendingPathComponent(".kumquat-probe-\(UUID().uuidString)")
@@ -37,7 +32,8 @@ final class FileAccess {
         return true
     }
 
-    /// Asks the user to grant a folder; `suggested` is preselected. Returns the granted folder.
+    /// Shows the standard folder panel so the user can grant one folder; `suggested` is preselected.
+    /// Never asks up front: only when a result is about to be saved somewhere not yet granted.
     @discardableResult
     func requestAccess(suggested: URL? = nil, message: String) -> URL? {
         NSApp.activate()
@@ -45,7 +41,7 @@ final class FileAccess {
         panel.canChooseDirectories = true
         panel.canChooseFiles = false
         panel.canCreateDirectories = false
-        panel.directoryURL = suggested ?? FileManager.default.homeDirectoryForCurrentUser
+        panel.directoryURL = suggested
         panel.prompt = tr("Allow Access")
         panel.message = message
         guard panel.runModal() == .OK, let url = panel.url else { return nil }
@@ -72,8 +68,7 @@ final class FileAccess {
     /// Returns false if the user declined, so the caller can fall back to Downloads.
     func ensureWritable(_ folders: [URL]) -> Bool {
         for folder in Set(folders) where !Self.isWritable(folder) {
-            let message = tr("Kumquat saves results next to the original. Allow access to “%@” — or choose your home folder to cover every folder at once.",
-                             folder.lastPathComponent)
+            let message = tr("Kumquat saves results next to the original. Allow it to save into “%@”.", folder.lastPathComponent)
             requestAccess(suggested: folder, message: message)
             if !Self.isWritable(folder) { return false }
         }
