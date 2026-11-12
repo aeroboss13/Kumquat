@@ -14,7 +14,7 @@
 | Price | Free |
 | Age rating | 4+ (на все вопросы анкеты — «None» / «No») |
 | Copyright | © 2026 Pavel Bardin |
-| Support URL | https://github.com/aeroboss13/Kumquat/issues |
+| Support URL | https://aeroboss13.github.io/Kumquat/support/ |
 | Marketing URL | https://github.com/aeroboss13/Kumquat |
 | Privacy Policy URL | https://github.com/aeroboss13/Kumquat/blob/main/PRIVACY.md |
 | Screenshots | `docs/appstore/screenshots/en-*.jpg` и `ru-*.jpg`, 2880×1800 |
