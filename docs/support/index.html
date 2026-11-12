@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kumquat Support</title>
+<meta name="description" content="Help and contact for Kumquat, the drag-and-drop file converter for Mac.">
+<style>
+  :root { --bg:#fffaf5; --text:#2b2118; --muted:#6f6257; --accent:#f07b2c; --card:#ffffff; --line:#f0e3d6; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#1d1813; --text:#f3ebe3; --muted:#b5a698; --accent:#ff9a4d; --card:#27201a; --line:#3a2f26; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:17px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 48px 20px 72px; }
+  header { display:flex; align-items:center; gap:16px; margin-bottom: 8px; }
+  .logo { width:56px; height:56px; border-radius:14px; background:linear-gradient(160deg,#ffb84a,#f56b1f); display:grid; place-items:center; color:#fff; font-size:30px; font-weight:700; }
+  h1 { font-size: 34px; margin: 0; }
+  h2 { font-size: 22px; margin: 40px 0 12px; }
+  h3 { font-size: 17px; margin: 22px 0 4px; }
+  p { margin: 6px 0; }
+  .muted { color: var(--muted); }
+  .contact { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px 22px; margin-top: 24px; }
+  .contact a.mail { font-size: 20px; font-weight: 600; }
+  a { color: var(--accent); }
+  nav.lang { margin-top: 10px; font-size: 15px; }
+  hr { border: 0; border-top: 1px solid var(--line); margin: 56px 0 8px; }
+  ul { padding-left: 22px; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="logo" aria-hidden="true">⇧</div>
+    <div>
+      <h1>Kumquat Support</h1>
+      <p class="muted">The drag-and-drop file converter for Mac</p>
+    </div>
+  </header>
+  <nav class="lang"><a href="#ru">Русская версия ниже</a></nav>
+
+  <div class="contact">
+    <p><strong>Need help, found a bug or have an idea?</strong> Write to us — we usually answer within two business days.</p>
+    <p><a class="mail" href="mailto:p.bardin2017@yandex.ru?subject=Kumquat%20support">p.bardin2017@yandex.ru</a></p>
+    <p class="muted">You can also open an issue on <a href="https://github.com/aeroboss13/Kumquat/issues">GitHub</a>. Please include your macOS version and, if something failed, the file type you were converting.</p>
+  </div>
+
+  <h2>How to use Kumquat</h2>
+  <p>Start dragging any file in Finder or on the desktop. While still holding the mouse button, tap a key:</p>
+  <ul>
+    <li><strong>⇧ Shift</strong> — convert to another format</li>
+    <li><strong>⌘ Command</strong> — tools: compress, erase metadata, remove background and more</li>
+    <li><strong>⌃ Control</strong> — actions: AirDrop, floating shelf, copy, move, copy path, Terminal</li>
+  </ul>
+  <p>Drop the file on a slice of the wheel. The result appears next to the original. Prefer clicking? Open the Kumquat window from the menu bar icon and drop files there.</p>
+
+  <h2>Frequently asked questions</h2>
+  <h3>The wheel doesn't appear when I tap Shift.</h3>
+  <p>Tap the key while you are already dragging a file, with the mouse button held. Check that the gesture is on in the menu bar icon, and that the keys in Settings match the ones you press. Drags of text, links or e-mail attachments that are not files don't open the wheel.</p>
+  <h3>Why does Kumquat ask for access to a folder?</h3>
+  <p>Mac App Store apps run in a sandbox and may only write where you allow. The first time a result is saved into a folder, macOS shows a standard folder panel; click <em>Allow Access</em>. If you decline, the result is saved to Downloads. You can review allowed folders in Settings → File access.</p>
+  <h3>Where are my converted files?</h3>
+  <p>Next to the original by default. You can change this in Settings → Output, and click any finished item in the notification or the Recent list to show it in Finder.</p>
+  <h3>Does Kumquat upload my files?</h3>
+  <p>No. Every conversion runs on your Mac. Kumquat has no accounts, no analytics and does not connect to the internet. See the <a href="https://github.com/aeroboss13/Kumquat/blob/main/PRIVACY.md">privacy policy</a>.</p>
+  <h3>Which formats are supported?</h3>
+  <p>Images (JPG, PNG, WebP, HEIC, AVIF, TIFF, BMP, GIF, PDF), video (MP4, MOV, MKV, WebM, AVI, WMV, GIF), audio (MP3, M4A, WAV, FLAC, OGG, Opus, AIFF, WMA), PDF, documents (DOCX, RTF, ODT, TXT, Markdown, HTML, EPUB), spreadsheets (CSV, TSV, XLSX, ODS, JSON), subtitles (SRT, VTT) and archives (ZIP, TAR, GZ, RAR, 7Z).</p>
+  <h3>System requirements</h3>
+  <p>macOS 15 or later on a Mac with Apple silicon.</p>
+
+  <hr id="ru">
+
+  <h1 lang="ru" style="margin-top:32px">Поддержка Kumquat</h1>
+  <div class="contact" lang="ru">
+    <p><strong>Нужна помощь, нашли ошибку или есть идея?</strong> Напишите нам — обычно отвечаем в течение двух рабочих дней.</p>
+    <p><a class="mail" href="mailto:p.bardin2017@yandex.ru?subject=Kumquat">p.bardin2017@yandex.ru</a></p>
+    <p class="muted">Можно также создать задачу на <a href="https://github.com/aeroboss13/Kumquat/issues">GitHub</a>. Укажите версию macOS и, если что-то не сработало, тип файла.</p>
+  </div>
+
+  <div lang="ru">
+    <h2>Как пользоваться</h2>
+    <p>Начните перетаскивать файл в Finder или на рабочем столе и, не отпуская кнопку мыши, нажмите <strong>⇧ Shift</strong> (конвертация), <strong>⌘ Command</strong> (инструменты) или <strong>⌃ Control</strong> (действия). Бросьте файл на сектор колеса — результат появится рядом с оригиналом.</p>
+
+    <h2>Частые вопросы</h2>
+    <h3>Колесо не появляется.</h3>
+    <p>Нажимайте клавишу во время перетаскивания, удерживая кнопку мыши. Проверьте, что жест включён (иконка в строке меню) и клавиши в настройках совпадают.</p>
+    <h3>Почему Kumquat просит доступ к папке?</h3>
+    <p>Приложения из Mac App Store работают в песочнице. При первом сохранении в папку macOS показывает стандартное окно — нажмите «Разрешить доступ». Если отказать, результат сохранится в «Загрузки». Список разрешённых папок — в «Настройки → Доступ к файлам».</p>
+    <h3>Загружает ли Kumquat мои файлы в интернет?</h3>
+    <p>Нет. Всё конвертируется на вашем Mac, приложение не подключается к интернету. <a href="https://github.com/aeroboss13/Kumquat/blob/main/PRIVACY.md">Политика конфиденциальности</a>.</p>
+    <h3>Системные требования</h3>
+    <p>macOS 15 или новее, Mac на Apple silicon.</p>
+  </div>
+</main>
+</body>
+</html>
